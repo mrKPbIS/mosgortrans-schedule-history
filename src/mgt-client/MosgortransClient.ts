@@ -1,9 +1,13 @@
 
 import * as req from 'request';
 import * as qs from 'querystring';
-import { ROUTE_TYPE, ROUTE_DIRECTION, ROUTE_DAYS, ROUTE_STOPS, LIST_PARAMS } from './dto/MosgortransRequestConstants';
-import { convertWin1251BufToUtf8, convertToUri } from '../utils/CharsetConverter';
 import { readFile } from 'fs';
+import { ROUTE_STOPS, LIST_PARAMS } from './dto/MosgortransRequestConstants';
+import { convertWin1251BufToUtf8, convertToUri } from '../utils/CharsetConverter';
+import { GetRoutesListRequest } from './dto/GetRoutesListRequest';
+import { GetRouteDaysRequest } from './dto/GetRouteDaysRequest';
+import { GetRouteDirectionsRequest } from './dto/GetRouteDirectionsRequest';
+import { GetRouteScheduleRequest } from './dto/GetRouteScheduleRequest';
 
 export class MosgortransClient {
   private MGT_URI;
@@ -16,7 +20,7 @@ export class MosgortransClient {
     this.MGT_SCHEDULE_URI = `${this.MGT_URI}/shedule.php`;
   }
    
-  getRouteSchedule({ type, route, days, direction, waypoints }: { type: string, route: string, days: string, direction: string, waypoints: string | number}) {
+  getRouteSchedule({ type, route, days, direction, waypoints }: GetRouteScheduleRequest) {
     const requestQuery = {
       type,
       way: route,
@@ -27,7 +31,7 @@ export class MosgortransClient {
     return this.makeGetRequest(this.MGT_SCHEDULE_URI, requestQuery);
   }
 
-  getRoutesList({ type }: { type: string }) {
+  getRoutesList({ type }: GetRoutesListRequest) {
     const requestQuery = {
       list: LIST_PARAMS.ROUTES,
       type,
@@ -36,7 +40,7 @@ export class MosgortransClient {
     return this.makeGetRequest(this.MGT_LIST_URI, requestQuery);
   }
 
-  getRouteDays({ type, route }: {type: string; route: string }) {
+  getRouteDays({ type, route }: GetRouteDaysRequest) {
     const requestQuery = {
       list: LIST_PARAMS.DAYS,
       type,
@@ -46,7 +50,7 @@ export class MosgortransClient {
     return this.makeGetRequest(this.MGT_LIST_URI, requestQuery);
   }
 
-  getRouteDirections({ type, route, days }) {
+  getRouteDirections({ type, route, days }: GetRouteDirectionsRequest) {
     const requestQuery = {
       list: LIST_PARAMS.DIRECTIONS,
       type,
