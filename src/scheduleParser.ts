@@ -1,8 +1,8 @@
 import { JSDOM } from 'jsdom';
 import { writeFile } from 'fs';
-import {} from 'date-fns';
+import { format } from 'date-fns';
 import { MosgortransClient } from './mgt-client/MosgortransClient';
-import { ROUTE_TYPE, ROUTE_DIRECTION, ROUTE_DAYS, ROUTE_STOPS, LIST_PARAMS } from './mgt-client/dto/MosgortransRequestConstants';
+import { ROUTE_TYPE, ROUTE_DIRECTION, ROUTE_DAYS, ROUTE_STOPS } from './mgt-client/dto/MosgortransRequestConstants';
 
 
 export class ScheduleParser {
@@ -22,7 +22,9 @@ export class ScheduleParser {
       type: ROUTE_TYPE.TRAM,
     });
     const [bus, trolley, tram] = await (await Promise.all([busResponse, trolResponse, tramResponse])).map(item => this.parseList(item));
-    this.saveRawHtml(bus, ROUTE_TYPE.BUS);
+    this.saveRoutes(trolley, ROUTE_TYPE.TROLLEY);
+    this.saveRoutes(tram, ROUTE_TYPE.TRAM);
+    this.saveRoutes(bus, ROUTE_TYPE.BUS);
     return {
       bus,
       trolley,
@@ -35,30 +37,27 @@ export class ScheduleParser {
     return this.parseSchedule(scheduleResponse);
   }
 
-  private async saveRawHtml(transportList, type) {
+  private async saveRoutes(transportList, type) {
     let i = 0;
     while(true) {
       const item = transportList[i];
       try {
-        const rawHtml = await this.mgtClient.getRouteSchedule({
+        const htmlWeekdays = await this.mgtClient.getRouteSchedule({
           type: type,
           route: item,
           days: ROUTE_DAYS.WEEKDAYS,
           direction: ROUTE_DIRECTION.REGULAR,
           waypoints: ROUTE_STOPS.ALL_STOPS
         });
-        console.log(`${item} successful`);
-        writeFile(`./routes/${type}_${item}_${Date.now()}.html`, rawHtml, 'utf-8', (errWrite) => {
-          if (errWrite) {
-            console.log(`unable to write ${type} ${item}`)
-          } else {
-            console.log(`${type} ${item} successfully written`)
-          }
+        await this.saveRawHtml(htmlWeekdays, `./routes/${type}_${item}_weekdays_${format(Date.now(), 'yyyy-MM-dd')}.html`);
+        const htmlHolidays = await this.mgtClient.getRouteSchedule({
+          type: type,
+          route: item,
+          days: ROUTE_DAYS.HOLIDAYS,
+          direction: ROUTE_DIRECTION.REGULAR,
+          waypoints: ROUTE_STOPS.ALL_STOPS
         });
-        await new Promise((resolve, reject) => {
-          setTimeout(() => resolve(
-          ), 100);
-        });
+        await this.saveRawHtml(htmlHolidays, `./routes/${type}_${item}_holidays_${format(Date.now(), 'yyyy-MM-dd')}.html`);
         i++;
         if (i == transportList.length) {
           break;
@@ -67,6 +66,20 @@ export class ScheduleParser {
         console.log(`${err} with ${item}`);
       }
     }
+  }
+
+  private async saveRawHtml(html, path) {
+    writeFile(path, html, 'utf-8', (errWrite) => {
+      if (errWrite) {
+        console.log(`unable to write ${path}`)
+      } else {
+        console.log(`${path} created`)
+      }
+    });
+    return await new Promise((resolve, _) => {
+      setTimeout(() => resolve(
+      ), 100);
+    });
   }
 
   private parseList(resp) {
