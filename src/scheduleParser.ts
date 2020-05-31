@@ -2,7 +2,7 @@ import { JSDOM } from 'jsdom';
 import { writeFile } from 'fs';
 import {} from 'date-fns';
 import { MosgortransClient } from './mgt-client/MosgortransClient';
-import { ROUTE_TYPE_BUS, ROUTE_TYPE_TROLLEY, ROUTE_TYPE_TRAM, ROUTE_WEEKDAYS, ROUTE_DIRECTION, ALL_STOPS } from './mgt-client/dto/MosgortransRequestConstants';
+import { ROUTE_TYPE, ROUTE_DIRECTION, ROUTE_DAYS, ROUTE_STOPS, LIST_PARAMS } from './mgt-client/dto/MosgortransRequestConstants';
 
 
 export class ScheduleParser {
@@ -13,16 +13,16 @@ export class ScheduleParser {
 
   async getAllRoutes() {
     const busResponse = this.mgtClient.getRoutesList({
-      type: ROUTE_TYPE_BUS,
+      type: ROUTE_TYPE.BUS,
     });
     const trolResponse = this.mgtClient.getRoutesList({
-      type: ROUTE_TYPE_TROLLEY,
+      type: ROUTE_TYPE.TROLLEY,
     });
     const tramResponse = this.mgtClient.getRoutesList({
-      type: ROUTE_TYPE_TRAM,
+      type: ROUTE_TYPE.TRAM,
     });
     const [bus, trolley, tram] = await (await Promise.all([busResponse, trolResponse, tramResponse])).map(item => this.parseList(item));
-    this.saveRawHtml(bus, ROUTE_TYPE_BUS);
+    this.saveRawHtml(bus, ROUTE_TYPE.BUS);
     return {
       bus,
       trolley,
@@ -43,9 +43,9 @@ export class ScheduleParser {
         const rawHtml = await this.mgtClient.getRouteSchedule({
           type: type,
           route: item,
-          days: ROUTE_WEEKDAYS,
-          direction: ROUTE_DIRECTION,
-          waypoints: ALL_STOPS
+          days: ROUTE_DAYS.WEEKDAYS,
+          direction: ROUTE_DIRECTION.REGULAR,
+          waypoints: ROUTE_STOPS.ALL_STOPS
         });
         console.log(`${item} successful`);
         writeFile(`./routes/${type}_${item}_${Date.now()}.html`, rawHtml, 'utf-8', (errWrite) => {

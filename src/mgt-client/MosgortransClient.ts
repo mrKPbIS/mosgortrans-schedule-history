@@ -1,7 +1,7 @@
 
 import * as req from 'request';
 import * as qs from 'querystring';
-import { LIST_ROUTES, NO_STOPS, LIST_DAYS, LIST_DIRECTIONS } from './dto/MosgortransRequestConstants';
+import { ROUTE_TYPE, ROUTE_DIRECTION, ROUTE_DAYS, ROUTE_STOPS, LIST_PARAMS } from './dto/MosgortransRequestConstants';
 import { convertWin1251BufToUtf8, convertToUri } from '../utils/CharsetConverter';
 import { readFile } from 'fs';
 
@@ -29,30 +29,30 @@ export class MosgortransClient {
 
   getRoutesList({ type }: { type: string }) {
     const requestQuery = {
-      list: LIST_ROUTES,
+      list: LIST_PARAMS.ROUTES,
       type,
-      waypoint: NO_STOPS,
+      waypoint: ROUTE_STOPS.NO_STOPS,
     }
     return this.makeGetRequest(this.MGT_LIST_URI, requestQuery);
   }
 
   getRouteDays({ type, route }: {type: string; route: string }) {
     const requestQuery = {
-      list: LIST_DAYS,
+      list: LIST_PARAMS.DAYS,
       type,
       way: route,
-      waypoint: NO_STOPS,
+      waypoint: ROUTE_STOPS.NO_STOPS,
     }
     return this.makeGetRequest(this.MGT_LIST_URI, requestQuery);
   }
 
   getRouteDirections({ type, route, days }) {
     const requestQuery = {
-      list: LIST_DIRECTIONS,
+      list: LIST_PARAMS.DIRECTIONS,
       type,
       way: route,
       date: days,
-      waypoint: NO_STOPS,
+      waypoint: ROUTE_STOPS.NO_STOPS,
     };
     return this.makeGetRequest(this.MGT_LIST_URI, requestQuery);
   }
