@@ -86,12 +86,60 @@ export class ScheduleParser {
     return resp.trim().split('\n');
   }
 
-  private parseSchedule(resp) {
-    //class bottomwideborder for tables
+  private parseSchedule(html) {
+    //class bottomwideborder for tables with info and timeschedule
     //element h2 for stop names
-    const respDom = new JSDOM(resp);
+    const respDom = new JSDOM(html);
     const respDocument = respDom.window.document;
-    const stops = Array.from(respDocument.getElementsByTagName('h2'))
-    const tables = Array.from(respDocument.getElementsByClassName('bottomwideborder'))
+    const stops: any[] = Array.from(respDocument.getElementsByTagName('h2'));
+    const [info , ...tables] = Array.from(respDocument.getElementsByClassName('bottomwideborder'));
+    const stopsTable = this.parseStops(stops, tables);
+    const updateDate = this.parseUpdateDate(info);
+    return {
+      date: updateDate,
+      stops: stopsTable,
+    }
+  }
+
+  private parseUpdateDate(info: any) {
+    //element h3 for text in info
+    //last update date is 5th h3
+    const scheduleInfo: any = Array.from(info.getElementsByTagName('h3'));
+    return scheduleInfo.length >= 4 ? scheduleInfo[4].textContent : null;
+  }
+
+  private parseStops(stops: any[], tables: any[]) {
+    //element span for hours and minutes 
+    const schedules = tables.map((timeTable) => {
+      const scheduleTime = Array.from(timeTable.getElementsByTagName('span'));
+      return this.parseTimeTable(scheduleTime);
+    }); 
+    return schedules.map((val, index) => {
+      return {
+        stopName: stops[index].textContent,
+        time: val,
+      }
+    });
+  }
+
+  private parseTimeTable(scheduleTime) {
+    //class hour, minutes for time of arriving
+    //class grayhour for skipped hour without stops
+    const timeResult = scheduleTime.reduce((res: any, timeMark: any) => {
+      if (timeMark.className === 'hour') {
+        res.curHour = timeMark.textContent;
+      } else
+      if (timeMark.className === 'grayhour') {
+        res.curHour = null;
+      } else
+      if (timeMark.className === 'minutes' && res.curHour) {
+        res.schedules.push(`${res.curHour}:${timeMark.textContent}`);
+      }
+      return res;
+    }, {
+      curHour: '', 
+      schedules: [],
+    });
+    return timeResult.schedules;
   }
 }
